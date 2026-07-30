@@ -1,0 +1,57 @@
+[
+  {
+    "id": "flag-3001",
+    "contentType": "image",
+    "category": "violence",
+    "caption": "Post reported by 14 users — caption references a real-world altercation with graphic description.",
+    "thumbnailUrl": "https://picsum.photos/seed/moderation-a/300/200",
+    "reportCount": 14,
+    "authorPriorViolations": 2,
+    "platform": "Community Feed",
+    "timestamp": "2026-07-28T10:12:00Z"
+  },
+  {
+    "id": "flag-3002",
+    "contentType": "text",
+    "category": "spam",
+    "caption": "Repeated promotional comment posted 40+ times across unrelated threads in the last hour.",
+    "thumbnailUrl": "https://picsum.photos/seed/moderation-b/300/200",
+    "reportCount": 3,
+    "authorPriorViolations": 0,
+    "platform": "Comments",
+    "timestamp": "2026-07-28T10:20:00Z"
+  },
+  {
+    "id": "flag-3003",
+    "contentType": "text",
+    "category": "harassment",
+    "caption": "Reply thread flagged for targeted insults directed at another user across multiple posts.",
+    "thumbnailUrl": "https://picsum.photos/seed/moderation-c/300/200",
+    "reportCount": 6,
+    "authorPriorViolations": 1,
+    "platform": "Comments",
+    "timestamp": "2026-07-28T10:31:00Z"
+  },
+  {
+    "id": "flag-3004",
+    "contentType": "video",
+    "category": "self_harm",
+    "caption": "Video flagged by automated classifier for content referencing self-harm; no prior context available.",
+    "thumbnailUrl": "https://picsum.photos/seed/moderation-d/300/200",
+    "reportCount": 2,
+    "authorPriorViolations": 0,
+    "platform": "Video Feed",
+    "timestamp": "2026-07-28T10:40:00Z"
+  },
+  {
+    "id": "flag-3005",
+    "contentType": "text",
+    "category": "misinformation",
+    "caption": "Post shares an unverified health claim flagged by fact-check partners as potentially misleading.",
+    "thumbnailUrl": "https://picsum.photos/seed/moderation-e/300/200",
+    "reportCount": 9,
+    "authorPriorViolations": 0,
+    "platform": "Community Feed",
+    "timestamp": "2026-07-28T10:52:00Z"
+  }
+]

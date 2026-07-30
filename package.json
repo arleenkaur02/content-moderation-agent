@@ -1,0 +1,29 @@
+{
+  "name": "content-moderation-agent",
+  "version": "1.0.0",
+  "description": "An AI agent that triages flagged content, scores policy violation type, severity, and false-positive likelihood, auto-actions clear-cut cases, and routes ambiguous ones to a human review queue with a generated rationale.",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "simulate": "ts-node src/simulate.ts"
+  },
+  "keywords": ["ai-agent", "trust-and-safety", "content-moderation", "llm", "human-in-the-loop"],
+  "author": "Arleen Kaur Teerthy",
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.1",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.14.10",
+    "@types/uuid": "^9.0.8",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.5.4"
+  }
+}

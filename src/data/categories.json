@@ -1,0 +1,8 @@
+[
+  { "id": "hate_speech", "label": "Hate speech", "baseSeverity": "high", "color": "#E0484B" },
+  { "id": "violence", "label": "Violence", "baseSeverity": "critical", "color": "#FF6B4A" },
+  { "id": "spam", "label": "Spam", "baseSeverity": "low", "color": "#8B8B99" },
+  { "id": "self_harm", "label": "Self-harm", "baseSeverity": "critical", "color": "#E0484B" },
+  { "id": "harassment", "label": "Harassment", "baseSeverity": "medium", "color": "#E8A33D" },
+  { "id": "misinformation", "label": "Misinformation", "baseSeverity": "medium", "color": "#E8A33D" }
+]

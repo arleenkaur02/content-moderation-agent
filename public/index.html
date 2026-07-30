@@ -1,0 +1,618 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Trust &amp; Safety — Moderation Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #1B1B1D;
+    --bg-panel: #232326;
+    --bg-raised: #2C2C30;
+    --line: #38383D;
+    --red: #E0484B;
+    --red-dim: #A83437;
+    --amber: #E8A33D;
+    --green: #5FB878;
+    --gray: #8B8B93;
+    --ink: #ECECEF;
+    --ink-dim: #8B8B93;
+    --sans: "Inter", -apple-system, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--sans); line-height: 1.55; }
+  a { color: inherit; }
+
+  .shell { display: flex; min-height: 100vh; }
+
+  /* Sidebar */
+  .sidebar {
+    width: 232px; flex-shrink: 0; background: var(--bg-panel); border-right: 1px solid var(--line);
+    display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh;
+  }
+  .sidebar-brand { padding: 22px 20px 18px; border-bottom: 1px solid var(--line); }
+  .sidebar-brand .dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--red); display: inline-block;
+    margin-right: 8px; box-shadow: 0 0 8px var(--red);
+  }
+  .sidebar-brand h1 { font-size: 15px; font-weight: 700; margin: 0 0 2px; }
+  .sidebar-brand .sub { font-family: var(--mono); font-size: 10.5px; color: var(--ink-dim); }
+
+  .sidebar-nav { flex: 1; padding: 14px 10px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+    background: none; border: none; color: var(--ink-dim); font-family: var(--sans);
+    font-size: 13.5px; font-weight: 500; padding: 11px 12px; border-radius: 8px; cursor: pointer;
+    margin-bottom: 2px; transition: background 0.15s ease, color 0.15s ease;
+  }
+  .nav-item:hover { background: var(--bg-raised); color: var(--ink); }
+  .nav-item.active { background: rgba(224,72,75,0.12); color: var(--red); }
+  .nav-item .nav-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: 0.7; flex-shrink: 0; }
+
+  .sidebar-footer { padding: 16px 20px; border-top: 1px solid var(--line); font-family: var(--mono); font-size: 10px; color: var(--ink-dim); }
+  .sidebar-footer a { display: block; margin-bottom: 4px; text-decoration: none; }
+  .sidebar-footer a:hover { color: var(--red); }
+
+  /* Main content */
+  .content { flex: 1; padding: 34px 40px 90px; max-width: 1080px; }
+  .page { display: none; animation: fade-in 0.25s ease; }
+  .page.active { display: block; }
+  @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+  .page-eyebrow {
+    font-family: var(--mono); font-size: 11px; color: var(--red); letter-spacing: 0.12em;
+    text-transform: uppercase; margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+  }
+  .page-eyebrow::before { content: ""; width: 18px; height: 1px; background: var(--red); }
+  .page h2 { font-size: 28px; font-weight: 700; margin: 0 0 12px; max-width: 620px; }
+  .page > p.lede { color: var(--ink-dim); max-width: 560px; font-size: 14px; margin: 0 0 28px; }
+
+  .fire-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 30px; }
+  select.picker {
+    background: var(--bg-panel); border: 1px solid var(--line); color: var(--ink);
+    font-family: var(--mono); font-size: 12px; padding: 12px 14px; border-radius: 8px; cursor: pointer;
+  }
+  button.fire {
+    background: var(--red); color: #1B1B1D; border: none; font-family: var(--sans); font-weight: 700;
+    font-size: 13px; padding: 13px 22px; border-radius: 8px; cursor: pointer; transition: filter 0.15s ease, transform 0.12s ease;
+  }
+  button.fire:hover { filter: brightness(1.12); }
+  button.fire:active { transform: scale(0.98); }
+  button.fire:disabled { opacity: 0.5; cursor: wait; }
+  .status-line { font-family: var(--mono); font-size: 11.5px; color: var(--ink-dim); }
+
+  .filter-row { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+  .filter-chip {
+    font-family: var(--mono); font-size: 11px; padding: 6px 13px; border-radius: 20px;
+    border: 1px solid var(--line); background: var(--bg-panel); color: var(--ink-dim); cursor: pointer;
+  }
+  .filter-chip.active { background: var(--red); border-color: var(--red); color: #1B1B1D; }
+
+  .empty-state {
+    font-family: var(--mono); font-size: 12.5px; color: var(--ink-dim); border: 1px dashed var(--line);
+    border-radius: 12px; padding: 30px; text-align: center; background: var(--bg-panel);
+  }
+
+  /* Content queue cards - thumbnail based */
+  .queue-card {
+    display: flex; gap: 16px; background: var(--bg-panel); border: 1px solid var(--line);
+    border-radius: 12px; padding: 16px; margin-bottom: 14px; animation: rise-in 0.4s ease;
+  }
+  @keyframes rise-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+  .queue-thumb { width: 110px; height: 78px; border-radius: 8px; object-fit: cover; flex-shrink: 0; background: var(--bg-raised); }
+  .queue-body { flex: 1; min-width: 0; }
+  .queue-top { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 6px; flex-wrap: wrap; }
+  .queue-id { font-family: var(--mono); font-size: 12px; font-weight: 600; }
+  .badge { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.05em; text-transform: uppercase; padding: 3px 9px; border-radius: 20px; font-weight: 600; }
+  .badge.cat-hate_speech, .badge.cat-violence, .badge.cat-self_harm { color: var(--red); background: rgba(224,72,75,0.14); }
+  .badge.cat-harassment, .badge.cat-misinformation { color: var(--amber); background: rgba(232,163,61,0.14); }
+  .badge.cat-spam { color: var(--gray); background: rgba(139,139,147,0.14); }
+
+  .action-tag { font-family: var(--mono); font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; padding: 4px 10px; border-radius: 6px; font-weight: 700; display: inline-block; margin-bottom: 8px; }
+  .action-tag.auto_remove { color: var(--red); background: rgba(224,72,75,0.14); }
+  .action-tag.auto_approve { color: var(--green); background: rgba(95,184,120,0.14); }
+  .action-tag.escalate { color: var(--amber); background: rgba(232,163,61,0.14); }
+
+  .rationale { font-size: 12.5px; color: var(--ink); margin: 0 0 8px; }
+  .meta-row { font-family: var(--mono); font-size: 10.5px; color: var(--ink-dim); display: flex; gap: 14px; flex-wrap: wrap; }
+
+  section.log-header { display: flex; justify-content: space-between; align-items: baseline; border-top: 1px solid var(--line); padding-top: 22px; margin-bottom: 18px; }
+  section.log-header h3 { font-size: 15px; font-weight: 700; margin: 0; }
+
+  /* Review console - escalated only, larger cards */
+  .review-card { background: var(--bg-panel); border: 1px solid var(--red-dim); border-radius: 12px; padding: 20px; margin-bottom: 16px; display: flex; gap: 18px; }
+  .review-card img { width: 140px; height: 100px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
+  .review-policy { font-family: var(--mono); font-size: 11px; color: var(--red); margin-bottom: 8px; }
+  .review-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .review-actions button {
+    font-family: var(--mono); font-size: 10.5px; padding: 7px 14px; border-radius: 6px; border: 1px solid var(--line);
+    background: var(--bg-raised); color: var(--ink-dim); cursor: pointer;
+  }
+  .review-actions button:hover { border-color: var(--red); color: var(--ink); }
+
+  /* Orbit tab */
+  #orbitWrap { background: var(--bg-panel); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; position: relative; margin-bottom: 20px; }
+  #orbitWrap canvas { display: block; width: 100%; height: 480px; cursor: grab; }
+  #orbitWrap canvas:active { cursor: grabbing; }
+  .orbit-hint { position: absolute; bottom: 14px; left: 18px; font-family: var(--mono); font-size: 10.5px; color: var(--ink-dim); background: rgba(27,27,29,0.7); padding: 5px 10px; border-radius: 6px; }
+  .legend-row { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px; font-family: var(--mono); font-size: 11px; color: var(--ink-dim); }
+  .legend-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+
+  /* Analytics */
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 30px; }
+  .stat-card { background: var(--bg-panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
+  .stat-card .stat-value { font-size: 26px; font-weight: 700; margin-bottom: 4px; }
+  .stat-card .stat-value.red { color: var(--red); }
+  .stat-card .stat-value.amber { color: var(--amber); }
+  .stat-card .stat-value.green { color: var(--green); }
+  .stat-card .stat-label { font-family: var(--mono); font-size: 10.5px; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.05em; }
+
+  .chart-block { background: var(--bg-panel); border: 1px solid var(--line); border-radius: 12px; padding: 22px; margin-bottom: 18px; }
+  .chart-block h4 { font-size: 14px; font-weight: 700; margin: 0 0 16px; }
+  .bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 11px; }
+  .bar-row .bar-label { font-family: var(--mono); font-size: 11px; color: var(--ink-dim); width: 130px; flex-shrink: 0; text-align: right; }
+  .bar-track { flex: 1; background: var(--bg-raised); border-radius: 6px; height: 16px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 6px; transition: width 0.5s ease; }
+  .bar-count { font-family: var(--mono); font-size: 11px; width: 24px; }
+
+  /* Chat */
+  .chat-shell { background: var(--bg-panel); border: 1px solid var(--line); border-radius: 14px; display: flex; flex-direction: column; height: 460px; }
+  .chat-messages { flex: 1; overflow-y: auto; padding: 20px 22px; display: flex; flex-direction: column; gap: 12px; }
+  .chat-msg { max-width: 78%; padding: 11px 15px; border-radius: 14px; font-size: 13.5px; line-height: 1.5; }
+  .chat-msg.user { align-self: flex-end; background: var(--red); color: #1B1B1D; border-bottom-right-radius: 3px; font-weight: 500; }
+  .chat-msg.agent { align-self: flex-start; background: var(--bg-raised); color: var(--ink); border-bottom-left-radius: 3px; }
+  .chat-msg.agent.thinking { color: var(--ink-dim); font-style: italic; }
+  .chat-input-row { display: flex; gap: 10px; padding: 16px; border-top: 1px solid var(--line); }
+  .chat-input-row input { flex: 1; border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; font-family: var(--sans); font-size: 13px; background: var(--bg); color: var(--ink); }
+  .chat-input-row button { background: var(--red); color: #1B1B1D; border: none; border-radius: 8px; padding: 0 20px; font-family: var(--sans); font-weight: 700; font-size: 12.5px; cursor: pointer; }
+  .chat-input-row button:disabled { opacity: 0.5; cursor: wait; }
+  .suggestion-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .suggestion-chip { font-family: var(--mono); font-size: 10.5px; padding: 7px 13px; border-radius: 20px; border: 1px solid var(--line); background: var(--bg-panel); color: var(--ink-dim); cursor: pointer; }
+  .suggestion-chip:hover { border-color: var(--red); color: var(--red); }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <h1><span class="dot"></span>Trust &amp; Safety</h1>
+      <div class="sub">Moderation console</div>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="nav-item active" data-page="queue"><span class="nav-dot"></span>Moderation queue</button>
+      <button class="nav-item" data-page="review"><span class="nav-dot"></span>Review console</button>
+      <button class="nav-item" data-page="orbit"><span class="nav-dot"></span>Risk orbit</button>
+      <button class="nav-item" data-page="analytics"><span class="nav-dot"></span>Analytics</button>
+      <button class="nav-item" data-page="chat"><span class="nav-dot"></span>Ask the agent</button>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="https://github.com/arleenkaur02/content-moderation-agent" target="_blank">Source →</a>
+      <a href="/health">Health →</a>
+      <a href="/moderation">Raw JSON →</a>
+    </div>
+  </aside>
+
+  <div class="content">
+    <!-- QUEUE -->
+    <div class="page active" id="page-queue">
+      <div class="page-eyebrow">Live demo — no login required</div>
+      <h2>Content gets flagged. Watch the agent triage it.</h2>
+      <p class="lede">Every flagged item is scored for policy violation type, severity, and false-positive likelihood, then either auto-actioned or routed to a human reviewer with a generated rationale and policy citation.</p>
+
+      <div class="fire-row">
+        <select class="picker" id="scenario">
+          <option value="violence">Violence — graphic content, 14 reports</option>
+          <option value="spam">Spam — repeated pattern, 3 reports</option>
+          <option value="harassment">Harassment — targeted insults, 6 reports</option>
+          <option value="self_harm">Self-harm — flagged by classifier, 2 reports</option>
+          <option value="misinformation">Misinformation — unverified health claim, 9 reports</option>
+        </select>
+        <button class="fire" id="fireBtn">Flag content →</button>
+        <span class="status-line" id="statusLine"></span>
+      </div>
+
+      <section class="log-header"><h3>Queue</h3><span class="status-line" id="countLine"></span></section>
+      <div class="filter-row">
+        <button class="filter-chip active" data-filter="all">All</button>
+        <button class="filter-chip" data-filter="auto_remove">Auto-removed</button>
+        <button class="filter-chip" data-filter="escalate">Escalated</button>
+        <button class="filter-chip" data-filter="auto_approve">Auto-approved</button>
+      </div>
+      <div id="queueList"><div class="empty-state">No content flagged yet. Flag an item above to see the pipeline run.</div></div>
+    </div>
+
+    <!-- REVIEW CONSOLE -->
+    <div class="page" id="page-review">
+      <div class="page-eyebrow">Human review queue</div>
+      <h2>Escalated items awaiting review</h2>
+      <p class="lede">Content the agent judged too ambiguous or high-stakes to auto-action lands here, with the full rationale a human reviewer needs to make the final call.</p>
+      <div id="reviewList"><div class="empty-state">Nothing escalated yet. Flag some content on the Moderation Queue page.</div></div>
+    </div>
+
+    <!-- ORBIT (3D) -->
+    <div class="page" id="page-orbit">
+      <div class="page-eyebrow">Live 3D — drag to rotate, scroll to zoom</div>
+      <h2 style="font-size: 26px;">Risk orbit</h2>
+      <div class="legend-row">
+        <span><span class="legend-dot" style="background:#E0484B;"></span>High / critical severity</span>
+        <span><span class="legend-dot" style="background:#E8A33D;"></span>Medium severity</span>
+        <span><span class="legend-dot" style="background:#8B8B93;"></span>Low severity</span>
+      </div>
+      <div id="orbitWrap"><div class="orbit-hint">Drag to rotate · scroll to zoom</div></div>
+    </div>
+
+    <!-- ANALYTICS -->
+    <div class="page" id="page-analytics">
+      <div class="page-eyebrow">Computed live from this session's queue</div>
+      <h2 style="font-size: 26px;">Analytics</h2>
+      <div class="stat-grid" id="statGrid"></div>
+      <div class="chart-block"><h4>Decisions by action</h4><div id="actionChart"></div></div>
+      <div class="chart-block"><h4>Flags by category</h4><div id="categoryChart"></div></div>
+    </div>
+
+    <!-- CHAT -->
+    <div class="page" id="page-chat">
+      <div class="page-eyebrow">Ask questions about moderation decisions</div>
+      <h2 style="font-size: 26px; margin-bottom: 16px;">Ask the agent</h2>
+      <div class="suggestion-chips">
+        <button class="suggestion-chip" data-q="How many items have been escalated?">How many escalated?</button>
+        <button class="suggestion-chip" data-q="What policy applies to harassment content?">Policy for harassment?</button>
+        <button class="suggestion-chip" data-q="Why does self-harm content get escalated?">Why escalate self-harm?</button>
+      </div>
+      <div class="chat-shell">
+        <div class="chat-messages" id="chatMessages">
+          <div class="chat-msg agent">Hi — I can answer questions about content this system has moderated, decisions made, and policy references. Flag some content on the Moderation Queue page first, then ask me about it.</div>
+        </div>
+        <div class="chat-input-row">
+          <input type="text" id="chatInput" placeholder="Ask about a decision, category, or policy…" />
+          <button id="chatSend">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+  // ---------- Sidebar nav ----------
+  document.querySelectorAll(".nav-item").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".nav-item").forEach((b) => b.classList.remove("active"));
+      document.querySelectorAll(".page").forEach((p) => p.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById("page-" + btn.dataset.page).classList.add("active");
+      if (btn.dataset.page === "analytics") renderAnalytics();
+      if (btn.dataset.page === "review") renderReview();
+      if (btn.dataset.page === "orbit") { initOrbitIfNeeded(); onResizeOrbit(); }
+    });
+  });
+
+  // ---------- Scenarios ----------
+  const scenarios = {
+    violence: { contentType: "image", category: "violence", caption: "Post reported by 14 users — caption references a real-world altercation with graphic description.", thumbnailUrl: "https://picsum.photos/seed/live-violence/300/200", reportCount: 14, authorPriorViolations: 2, platform: "Community Feed" },
+    spam: { contentType: "text", category: "spam", caption: "Repeated promotional comment posted 40+ times across unrelated threads.", thumbnailUrl: "https://picsum.photos/seed/live-spam/300/200", reportCount: 3, authorPriorViolations: 0, platform: "Comments" },
+    harassment: { contentType: "text", category: "harassment", caption: "Reply thread flagged for targeted insults directed at another user.", thumbnailUrl: "https://picsum.photos/seed/live-harass/300/200", reportCount: 6, authorPriorViolations: 1, platform: "Comments" },
+    self_harm: { contentType: "video", category: "self_harm", caption: "Video flagged by automated classifier for self-harm references; no prior context.", thumbnailUrl: "https://picsum.photos/seed/live-selfharm/300/200", reportCount: 2, authorPriorViolations: 0, platform: "Video Feed" },
+    misinformation: { contentType: "text", category: "misinformation", caption: "Post shares an unverified health claim flagged by fact-check partners.", thumbnailUrl: "https://picsum.photos/seed/live-misinfo/300/200", reportCount: 9, authorPriorViolations: 0, platform: "Community Feed" }
+  };
+
+  const fireBtn = document.getElementById("fireBtn");
+  const statusLine = document.getElementById("statusLine");
+  const queueList = document.getElementById("queueList");
+  const countLine = document.getElementById("countLine");
+  let allRecords = [];
+  let activeFilter = "all";
+
+  function queueCardHtml(record) {
+    const c = record.content, d = record.decision;
+    return `
+      <img class="queue-thumb" src="${c.thumbnailUrl}" alt="" loading="lazy" />
+      <div class="queue-body">
+        <div class="queue-top">
+          <span class="queue-id">${c.id}</span>
+          <span class="badge cat-${c.category}">${c.category.replace("_"," ")}</span>
+        </div>
+        <div class="action-tag ${d.action}">${d.action.replace("_"," ")}</div>
+        <div class="rationale">${d.rationale}</div>
+        <div class="meta-row">
+          <span>Severity: ${d.severity}</span>
+          <span>False positive: ${d.falsePositiveLikelihood}</span>
+          <span>Confidence: ${d.confidence}</span>
+          <span>Reports: ${c.reportCount}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderQueueList() {
+    const filtered = activeFilter === "all" ? allRecords : allRecords.filter((r) => r.decision.action === activeFilter);
+    countLine.textContent = allRecords.length + " total";
+    queueList.innerHTML = "";
+    if (filtered.length === 0) {
+      queueList.innerHTML = `<div class="empty-state">${allRecords.length === 0 ? "No content flagged yet. Flag an item above to see the pipeline run." : "No items match this filter."}</div>`;
+      return;
+    }
+    filtered.slice().reverse().forEach((r) => {
+      const card = document.createElement("div");
+      card.className = "queue-card";
+      card.innerHTML = queueCardHtml(r);
+      queueList.appendChild(card);
+    });
+  }
+
+  document.querySelectorAll(".filter-chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      document.querySelectorAll(".filter-chip").forEach((c) => c.classList.remove("active"));
+      chip.classList.add("active");
+      activeFilter = chip.dataset.filter;
+      renderQueueList();
+    });
+  });
+
+  async function loadRecords() {
+    try {
+      const res = await fetch("/moderation");
+      allRecords = await res.json();
+      renderQueueList();
+    } catch (e) { /* silent */ }
+  }
+
+  fireBtn.addEventListener("click", async () => {
+    const key = document.getElementById("scenario").value;
+    const base = scenarios[key];
+    const content = { ...base, id: "flag-" + Date.now(), timestamp: new Date().toISOString() };
+
+    fireBtn.disabled = true;
+    statusLine.textContent = "Processing… (classification → severity scoring → routing)";
+
+    try {
+      const res = await fetch("/webhooks/flagged-content", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(content) });
+      const record = await res.json();
+      allRecords.push(record);
+      renderQueueList();
+      statusLine.textContent = "Done — action: " + record.decision.action;
+      pulseCategory(content.category);
+    } catch (e) {
+      statusLine.textContent = "Something went wrong — check /health";
+    } finally {
+      fireBtn.disabled = false;
+    }
+  });
+
+  // ---------- Review console ----------
+  function renderReview() {
+    const list = document.getElementById("reviewList");
+    const escalated = allRecords.filter((r) => r.decision.action === "escalate");
+    if (escalated.length === 0) {
+      list.innerHTML = '<div class="empty-state">Nothing escalated yet. Flag some content on the Moderation Queue page.</div>';
+      return;
+    }
+    list.innerHTML = escalated.slice().reverse().map((r) => `
+      <div class="review-card">
+        <img src="${r.content.thumbnailUrl}" alt="" loading="lazy" />
+        <div>
+          <div class="queue-top"><span class="queue-id">${r.content.id}</span><span class="badge cat-${r.content.category}">${r.content.category.replace("_"," ")}</span></div>
+          <div class="review-policy">${r.decision.policyReference}</div>
+          <div class="rationale">${r.decision.rationale}</div>
+          <div class="meta-row"><span>Severity: ${r.decision.severity}</span><span>Reports: ${r.content.reportCount}</span><span>Prior violations: ${r.content.authorPriorViolations}</span></div>
+          <div class="review-actions">
+            <button>Uphold removal</button>
+            <button>Reverse — approve</button>
+          </div>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  // ---------- Analytics ----------
+  const actionColors = { auto_remove: "#E0484B", auto_approve: "#5FB878", escalate: "#E8A33D" };
+  const categoryColors = { hate_speech: "#E0484B", violence: "#E0484B", self_harm: "#E0484B", harassment: "#E8A33D", misinformation: "#E8A33D", spam: "#8B8B93" };
+
+  function renderAnalytics() {
+    const statGrid = document.getElementById("statGrid");
+    const actionChart = document.getElementById("actionChart");
+    const categoryChart = document.getElementById("categoryChart");
+
+    const total = allRecords.length;
+    const escalatedCount = allRecords.filter((r) => r.decision.action === "escalate").length;
+    const escalatedPct = total ? Math.round((escalatedCount / total) * 100) : 0;
+    const autoRemoved = allRecords.filter((r) => r.decision.action === "auto_remove").length;
+    const highConf = allRecords.filter((r) => r.decision.confidence === "high").length;
+    const highConfPct = total ? Math.round((highConf / total) * 100) : 0;
+
+    statGrid.innerHTML = `
+      <div class="stat-card"><div class="stat-value red">${total}</div><div class="stat-label">Total flagged</div></div>
+      <div class="stat-card"><div class="stat-value amber">${escalatedPct}%</div><div class="stat-label">Escalated to human</div></div>
+      <div class="stat-card"><div class="stat-value red">${autoRemoved}</div><div class="stat-label">Auto-removed</div></div>
+      <div class="stat-card"><div class="stat-value green">${highConfPct}%</div><div class="stat-label">High confidence</div></div>
+    `;
+
+    if (total === 0) {
+      actionChart.innerHTML = categoryChart.innerHTML = '<div class="empty-state">Flag some content on the queue page to see analytics.</div>';
+      return;
+    }
+
+    const actionCounts = { auto_remove: 0, auto_approve: 0, escalate: 0 };
+    allRecords.forEach((r) => { actionCounts[r.decision.action] = (actionCounts[r.decision.action] || 0) + 1; });
+    const maxAction = Math.max(...Object.values(actionCounts), 1);
+    actionChart.innerHTML = Object.entries(actionCounts).map(([action, count]) => `
+      <div class="bar-row"><span class="bar-label">${action.replace("_"," ")}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${(count/maxAction)*100}%; background:${actionColors[action]};"></div></div>
+        <span class="bar-count">${count}</span></div>
+    `).join("");
+
+    const catCounts = {};
+    allRecords.forEach((r) => { catCounts[r.content.category] = (catCounts[r.content.category] || 0) + 1; });
+    const maxCat = Math.max(...Object.values(catCounts), 1);
+    categoryChart.innerHTML = Object.entries(catCounts).map(([cat, count]) => `
+      <div class="bar-row"><span class="bar-label">${cat.replace("_"," ")}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${(count/maxCat)*100}%; background:${categoryColors[cat] || '#8B8B93'};"></div></div>
+        <span class="bar-count">${count}</span></div>
+    `).join("");
+  }
+
+  // ---------- Chat ----------
+  const chatMessages = document.getElementById("chatMessages");
+  const chatInput = document.getElementById("chatInput");
+  const chatSend = document.getElementById("chatSend");
+  let chatHistory = [];
+
+  function appendChatMsg(role, text, isThinking = false) {
+    const div = document.createElement("div");
+    div.className = "chat-msg " + role + (isThinking ? " thinking" : "");
+    div.textContent = text;
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    return div;
+  }
+
+  async function sendChat(message) {
+    if (!message.trim()) return;
+    appendChatMsg("user", message);
+    chatInput.value = "";
+    chatSend.disabled = true;
+    const thinkingEl = appendChatMsg("agent", "Thinking…", true);
+    try {
+      const res = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message, history: chatHistory }) });
+      const data = await res.json();
+      thinkingEl.remove();
+      appendChatMsg("agent", data.reply || "I couldn't generate a response.");
+      chatHistory.push({ role: "user", content: message });
+      chatHistory.push({ role: "assistant", content: data.reply || "" });
+    } catch (e) {
+      thinkingEl.remove();
+      appendChatMsg("agent", "Something went wrong reaching the chat agent — check /health.");
+    } finally {
+      chatSend.disabled = false;
+    }
+  }
+
+  chatSend.addEventListener("click", () => sendChat(chatInput.value));
+  chatInput.addEventListener("keydown", (e) => { if (e.key === "Enter") sendChat(chatInput.value); });
+  document.querySelectorAll(".suggestion-chip").forEach((chip) => chip.addEventListener("click", () => sendChat(chip.dataset.q)));
+
+  // ---------- 3D Risk Orbit ----------
+  let orbitInitialized = false;
+  let renderer, scene, camera, controls, categoryMeshes = {}, categoryData = [];
+  let coreGroup, orbitGroup;
+
+  async function initOrbitIfNeeded() {
+    if (orbitInitialized) return;
+    orbitInitialized = true;
+
+    const res = await fetch("/categories");
+    categoryData = await res.json();
+
+    const wrap = document.getElementById("orbitWrap");
+    const width = wrap.clientWidth, height = 480;
+
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 100);
+    camera.position.set(0, 4, 10);
+
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    wrap.insertBefore(renderer.domElement, wrap.firstChild);
+
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 0.5;
+    controls.minDistance = 5;
+    controls.maxDistance = 18;
+
+    scene.add(new THREE.AmbientLight(0x999999, 0.8));
+    const redLight = new THREE.PointLight(0xe0484b, 1.4);
+    redLight.position.set(4, 6, 4);
+    scene.add(redLight);
+    const grayLight = new THREE.PointLight(0x8888aa, 0.6);
+    grayLight.position.set(-5, -3, -5);
+    scene.add(grayLight);
+
+    // Core sphere (Trust & Safety center)
+    coreGroup = new THREE.Group();
+    scene.add(coreGroup);
+    const coreGeo = new THREE.SphereGeometry(0.55, 32, 32);
+    const coreMat = new THREE.MeshStandardMaterial({ color: 0xececef, emissive: 0x444448, roughness: 0.5 });
+    coreGroup.add(new THREE.Mesh(coreGeo, coreMat));
+
+    // Orbit rings + category spheres
+    orbitGroup = new THREE.Group();
+    scene.add(orbitGroup);
+
+    const severityColor = { critical: 0xe0484b, high: 0xe0484b, medium: 0xe8a33d, low: 0x8b8b93 };
+
+    categoryData.forEach((cat, i) => {
+      const radius = 2.6 + i * 0.75;
+      const angle = (i / categoryData.length) * Math.PI * 2;
+
+      // Orbit ring (faint)
+      const ringGeo = new THREE.RingGeometry(radius - 0.01, radius + 0.01, 64);
+      const ringMat = new THREE.MeshBasicMaterial({ color: 0x38383d, side: THREE.DoubleSide, transparent: true, opacity: 0.4 });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.rotation.x = Math.PI / 2;
+      orbitGroup.add(ring);
+
+      // Category node
+      const color = severityColor[cat.baseSeverity] || 0x8b8b93;
+      const sphereGeo = new THREE.SphereGeometry(0.28, 24, 24);
+      const sphereMat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.4, roughness: 0.4 });
+      const sphere = new THREE.Mesh(sphereGeo, sphereMat);
+
+      const pivot = new THREE.Group();
+      pivot.rotation.y = angle;
+      sphere.position.set(radius, 0, 0);
+      pivot.add(sphere);
+      orbitGroup.add(pivot);
+
+      categoryMeshes[cat.id] = { mesh: sphere, pivot, baseEmissive: 0.4, orbitSpeed: 0.15 + i * 0.03 };
+    });
+
+    window.addEventListener("resize", onResizeOrbit);
+
+    function animate() {
+      requestAnimationFrame(animate);
+      Object.values(categoryMeshes).forEach((entry) => { entry.pivot.rotation.y += entry.orbitSpeed * 0.005; });
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+  }
+
+  function onResizeOrbit() {
+    if (!renderer) return;
+    const wrap = document.getElementById("orbitWrap");
+    const width = wrap.clientWidth, height = 480;
+    renderer.setSize(width, height);
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+  }
+
+  function pulseCategory(categoryId) {
+    if (!orbitInitialized || !categoryMeshes[categoryId]) return;
+    const entry = categoryMeshes[categoryId];
+    let t = 0;
+    const duration = 90;
+    function step() {
+      t++;
+      const scale = 1 + 0.6 * Math.sin((t / duration) * Math.PI);
+      entry.mesh.scale.set(scale, scale, scale);
+      entry.mesh.material.emissiveIntensity = entry.baseEmissive + 0.8 * Math.sin((t / duration) * Math.PI);
+      if (t < duration) requestAnimationFrame(step);
+      else { entry.mesh.scale.set(1, 1, 1); entry.mesh.material.emissiveIntensity = entry.baseEmissive; }
+    }
+    step();
+  }
+
+  loadRecords();
+</script>
+</body>
+</html>
